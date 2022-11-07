@@ -9,29 +9,47 @@ public class BezierCurve : MonoBehaviour
 {
 
     private LineRenderer lineRenderer;
-    [SerializeField]private LineRenderer lineTangOne;
-    [SerializeField] private LineRenderer lineTangTwo;
+    [SerializeField] private LineRenderer tangenteLine;
     [SerializeField] ControlPoint[] controlPoints;
     [SerializeField] int numberOfPoints;
+
+    int timeAnim = 10;
+    float startTime;
     private void Start()
     {
         lineRenderer = GetComponent<LineRenderer>();
+        startTime = Time.time;
     }
 
     private void Update()
     {
         lineRenderer.positionCount = numberOfPoints;
-        lineTangOne.positionCount = numberOfPoints;
-        lineTangTwo.positionCount = numberOfPoints;
+        tangenteLine.positionCount = numberOfPoints;
         for (int i = 0; i < numberOfPoints; i++)
         {
-            float t = i / (float)(numberOfPoints-1);
+            float t = i / (float)(numberOfPoints - 1);
             lineRenderer.SetPosition(i, DrawCurveWithWeight(t));
-            lineTangOne.SetPosition(i, DrawTangenteWithWeight(t, 0));
-            lineTangTwo.SetPosition(i, DrawTangenteWithWeight(t, 1));
-                
+
+        }
+
+        //animation tangente
+        if(Time.time - startTime < timeAnim)
+        {
+            for (int i = 0; i < numberOfPoints; i++)
+            {
+                float t = i / (float)(numberOfPoints - 1);
+                tangenteLine.SetPosition(i, DrawTangenteWithWeight(t, (Time.time - startTime) / timeAnim));
+
+            }
+
+        }
+        else
+        {
+            startTime = Time.time;
+            print("ouf");
         }
     }
+
 
     private Vector2 DrawThree(float t)
     {
@@ -98,13 +116,11 @@ public class BezierCurve : MonoBehaviour
     }
     private Vector3 DrawTangente(float t, float a)
     {
-        Vector3 tangente = Vector3.zero;
         return DrawCurve(a) + Derivative(a) * (t - a);
     }
 
     private Vector3 DrawTangenteWithWeight(float t, float a)
     {
-        Vector3 tangente = Vector3.zero;
         return DrawCurveWithWeight(a) + DerivativeWithWeight(a) * (t - a);
     }
     private int CoefBin(int i, int n)
