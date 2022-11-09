@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
+using System.Net.NetworkInformation;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,7 +13,7 @@ public class BezierCurve : MonoBehaviour
     private LineRenderer lineRenderer;
     [SerializeField] private LineRenderer tangenteLine;
     [SerializeField] private LineRenderer pointLine;
-    [SerializeField] ControlPoint[] controlPoints;
+    [SerializeField] public List<ControlPoint> controlPoints;
     [SerializeField] int numberOfPoints;
 
     int timeAnim = 10;
@@ -24,10 +25,28 @@ public class BezierCurve : MonoBehaviour
         tangenteLine.positionCount = 3;
     }
 
+    public void AddControlPoint()
+    {
+        GameObject duplicate = Instantiate(controlPoints[0].gameObject);
+        duplicate.transform.position = Vector3.zero;
+        controlPoints.Add(duplicate.GetComponent<ControlPoint>());
+    }
+
+    public void RemoveControlPoint()
+    {
+        if(controlPoints.Count > 2)
+        {
+            Destroy(controlPoints[controlPoints.Count - 2].gameObject);
+            controlPoints.RemoveAt(controlPoints.Count - 2);
+        }
+  
+    }
+
+
     private void Update()
     {
         lineRenderer.positionCount = numberOfPoints;
-        pointLine.positionCount = controlPoints.Length;
+        pointLine.positionCount = controlPoints.Count;
         for (int i = 0; i < numberOfPoints; i++)
         {
             float t = i / (float)(numberOfPoints - 1);
@@ -35,7 +54,7 @@ public class BezierCurve : MonoBehaviour
 
         }
 
-        for (int i =0; i < controlPoints.Length; i++)
+        for (int i =0; i < controlPoints.Count; i++)
         {
             pointLine.SetPosition(i, controlPoints[i].transform.position);
         }
@@ -64,7 +83,7 @@ public class BezierCurve : MonoBehaviour
 
      private Vector3 DrawCurve(float t)
     {
-        int n = controlPoints.Length - 1;
+        int n = controlPoints.Count - 1;
         Vector3 sum = Vector3.zero;
         for (int i = 0; i <= n; i++)
         {
@@ -75,7 +94,7 @@ public class BezierCurve : MonoBehaviour
 
     private Vector3 DrawCurveWithWeight(float t)
     {
-        int n = controlPoints.Length - 1;
+        int n = controlPoints.Count - 1;
         Vector3 sumUp = Vector3.zero;
         float sumDown = 0;
         for (int i = 0; i <= n; i++)
@@ -93,7 +112,7 @@ public class BezierCurve : MonoBehaviour
 
     private Vector3 Derivative(float t)
     {
-        int n = controlPoints.Length - 1;
+        int n = controlPoints.Count - 1;
         Vector3 sum = Vector3.zero;
         for (int i = 0; i < n; i++)
         {
@@ -104,7 +123,7 @@ public class BezierCurve : MonoBehaviour
 
     private Vector3 DerivativeWithWeight(float t)
     {
-        int n = controlPoints.Length - 1;
+        int n = controlPoints.Count - 1;
         Vector3 u = Vector3.zero;
         Vector3 uprime = Vector3.zero;
         float v = 0;
