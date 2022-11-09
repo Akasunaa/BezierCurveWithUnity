@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,6 +11,7 @@ public class BezierCurve : MonoBehaviour
 
     private LineRenderer lineRenderer;
     [SerializeField] private LineRenderer tangenteLine;
+    [SerializeField] private LineRenderer pointLine;
     [SerializeField] ControlPoint[] controlPoints;
     [SerializeField] int numberOfPoints;
 
@@ -19,12 +21,13 @@ public class BezierCurve : MonoBehaviour
     {
         lineRenderer = GetComponent<LineRenderer>();
         startTime = Time.time;
+        tangenteLine.positionCount = 3;
     }
 
     private void Update()
     {
         lineRenderer.positionCount = numberOfPoints;
-        tangenteLine.positionCount = numberOfPoints;
+        pointLine.positionCount = controlPoints.Length;
         for (int i = 0; i < numberOfPoints; i++)
         {
             float t = i / (float)(numberOfPoints - 1);
@@ -32,21 +35,23 @@ public class BezierCurve : MonoBehaviour
 
         }
 
+        for (int i =0; i < controlPoints.Length; i++)
+        {
+            pointLine.SetPosition(i, controlPoints[i].transform.position);
+        }
+
+
         //animation tangente
         if(Time.time - startTime < timeAnim)
         {
-            for (int i = 0; i < numberOfPoints; i++)
-            {
-                float t = i / (float)(numberOfPoints - 1);
-                tangenteLine.SetPosition(i, DrawTangenteWithWeight(t, (Time.time - startTime) / timeAnim));
-
-            }
-
+            float point = (Time.time - startTime) / timeAnim;
+            tangenteLine.SetPosition(0,DrawTangenteWithWeight(point - 0.5f, point));
+            tangenteLine.SetPosition(1, DrawTangenteWithWeight(point, point));
+            tangenteLine.SetPosition(2, DrawTangenteWithWeight(point + 0.5f, point));
         }
         else
         {
             startTime = Time.time;
-            print("ouf");
         }
     }
 
@@ -100,28 +105,30 @@ public class BezierCurve : MonoBehaviour
     private Vector3 DerivativeWithWeight(float t)
     {
         int n = controlPoints.Length - 1;
-        Vector3 sum = Vector3.zero;
-        float sumDown = 0;
+        Vector3 u = Vector3.zero;
+        Vector3 uprime = Vector3.zero;
+        float v = 0;
+        float vprime = 0;
         for (int i = 0; i < n; i++)
         {
-            sum += CoefBin(i, n - 1) * Mathf.Pow((1 - t), n - 1 - i) * Mathf.Pow(t, i) * (controlPoints[i + 1].position - controlPoints[i].position) * controlPoints[i].weight;
-            sumDown += CoefBin(i, n) * Mathf.Pow((1 - t), n - i) * Mathf.Pow(t, i) * controlPoints[i].weight;
-        }
-        if(sumDown != 0)
-        {
-            return n * sum / sumDown;
+            u += CoefBin(i, n) * Mathf.Pow((1 - t), n - i) * Mathf.Pow(t, i) * controlPoints[i].weight * controlPoints[i].position;
+            v += CoefBin(i, n) * Mathf.Pow((1 - t), n - i) * Mathf.Pow(t, i) * controlPoints[i].weight;
+            uprime += CoefBin(i, n - 1) * Mathf.Pow((1 - t), n - 1 - i) * Mathf.Pow(t, i) * (controlPoints[i + 1].position * controlPoints[i + 1].weight - controlPoints[i].position * controlPoints[i].weight);
+            vprime += CoefBin(i, n - 1) * Mathf.Pow((1 - t), n - 1 - i) * Mathf.Pow(t, i) * ( controlPoints[i + 1].weight -  controlPoints[i].weight);
 
         }
-        return n * sum;
+        return (uprime * v - u * vprime) / (v * v);
     }
-    private Vector3 DrawTangente(float t, float a)
+    private float DrawTangente(float t, float a)
     {
-        return DrawCurve(a) + Derivative(a) * (t - a);
+        return (DrawCurve(a) + Derivative(a) * (t - a)).y;
     }
 
     private Vector3 DrawTangenteWithWeight(float t, float a)
     {
-        return DrawCurveWithWeight(a) + DerivativeWithWeight(a) * (t - a);
+        Vector3 tan = Vector3.zero;
+        tan.x = t;
+        return ((DrawCurveWithWeight(a) + DerivativeWithWeight(a) * (t - a)));
     }
     private int CoefBin(int i, int n)
     {

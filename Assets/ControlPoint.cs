@@ -9,15 +9,25 @@ public class ControlPoint : MonoBehaviour
 
     private Vector3 screenPoint;
 
+    [SerializeField]private GameObject sphereWeight;
+
+    private LineRenderer line;
+    private float distance;
     private void Start()
     {
+        line=GetComponent<LineRenderer>();  
         position = transform.position;
+        line.positionCount = 2;
+        distance = Vector3.Distance(sphereWeight.transform.position, transform.position);
     }
 
     private void Update()
     {
         position = transform.position;
-
+        line.SetPosition(0, transform.position);
+        line.SetPosition(1, sphereWeight.transform.position);
+        weight = (int)(Vector3.Distance(sphereWeight.transform.position, transform.position) - distance);
+        if (weight<1) { weight = 1; }
     }
 
 
